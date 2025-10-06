@@ -1,50 +1,57 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+- Version: 1.0.0 → 2.0.0
+- Modified Principles: II. Şeffaflık ve Bilgilendirme; V. Simülasyon Sınırları; Etik Kullanım Kısıtları
+- Added Sections: None
+- Removed Sections: None
+- Templates requiring updates: ✅ .specify/templates/plan-template.md; ✅ .specify/templates/spec-template.md
+- Follow-up TODOs: ⚠ Update specs/001-bu-uygulama-c/plan.md to adopt conditional background capture rule
+-->
+
+# SafeKeyRecorder Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Kod Kalitesi
+- Tüm kod incelemeleri, otomatik testler ve statik analizler tamamlanmadan hiçbir değişiklik ana dala birleşemez.
+- Test kapsamı kritik senaryoları ve veri gizliliği kontrollerini içermek ZORUNDADIR.
+- Geliştirilen her modül, simülasyonun sınırlarını ve varsayımlarını açıklayan kısa dokümantasyonla teslim edilmelidir.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Şeffaflık ve Bilgilendirme
+- Uygulama her başlatıldığında kullanıcıya metinsel ve görsel bilgilendirme sunmalı, rıza alınmadan veri kaydı başlatılamaz.
+- Konsol ve günlükler, kaydedilen tüm girdi olaylarını ve bunların saklama durumunu açıkça belirtmek ZORUNDADIR.
+- Arka plan kaydı yalnızca kullanıcı açıkça onay verir, uygulama süresince kesintisiz ve kapatılamaz bir görsel uyarı gösterilir ve uyarı kanalına erişim engellenemezse mümkündür; aksi hâlde gizli çalışmayı sağlayacak servisler yasaktır.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Veri Gizliliği ve Rıza
+- Varsayılan olarak hiçbir tuş vuruşu kalıcı depolamaya yazılamaz; kayıtlar yalnızca kullanıcı onayıyla ve simülasyon süresince RAM üzerinde tutulmalıdır.
+- Kullanıcı isteği ile tüm kayıtlar anında ve geri döndürülemez biçimde silinmelidir.
+- Pseudonim veya maskeleme uygulanmadığı sürece gerçek kişi verileri işlenemez.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Sorumluluk ve Hukuki Uyum
+- Proje sadece eğitim ve güvenlik farkındalığı amaçlıdır; kötüye kullanım girişimleri reddedilmeli ve raporlanmalıdır.
+- Geliştirme kararları KVKK, GDPR ve ilgili yerel mevzuatla uyumlu olmak ZORUNDADIR.
+- Her sürüm notu, etik ve hukuki uyum değerlendirmesi içerir.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Simülasyon Sınırları
+- Simülasyon gerçek sistemlere zarar veremez; testler izole sanal ortamlarda koşmalıdır.
+- Ağ üzerinden veri sızdıracak veya üçüncü taraflara aktaracak herhangi bir fonksiyon eklenmesi yasaktır.
+- Arka plan veya global hook tabanlı kayıtlar yalnızca bilgilendirilmiş rıza, kesintisiz görsel uyarı, cihaz kilitlendiğinde otomatik duraklatma ve telemetride tam şeffaflık koşullarını sağlıyorsa etkinleştirilebilir; aksi hâlde devre dışı bırakılmalıdır.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Etik Kullanım Kısıtları
+- Ürün belgelerinde ve kurulum yönergelerinde kullanıcı rızasının zorunlu olduğu açıkça belirtilmelidir.
+- Varsayılan yapılandırma, kayıt özelliğini kapalı tutmalı ve etkinleştirme için iki adımlı onay istemelidir.
+- Arka plan modu, açık onay verilmeden etkinleştirilemez; etkinleştiğinde uygulama kilitlendiğinde kayıt durmalı ve modun başlangıç/bitiş zamanları telemetriye şifrelenmiş biçimde kaydedilmelidir.
+- Eğitim dışındaki dağıtımlar için ayrı bir risk değerlendirmesi ve yönetici onayı gereklidir.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Geliştirme Süreçleri ve Denetimler
+- Her sprint sonunda etik kontrol listesi gözden geçirilmeli, şeffaflık ve gizlilik testleri tekrar edilmelidir.
+- Kod incelemeleri sırasında `Kod Kalitesi`, `Şeffaflık`, `Veri Gizliliği`, `Sorumluluk` ve `Simülasyon Sınırları` kontrol noktaları işaretlenmeden onay verilemez.
+- Günlükler ve telemetri yalnızca simülasyon kapsamındaki metrikleri toplamalıdır; herhangi bir gerçek kullanıcı verisi tespit edilirse derhal temizlenmelidir.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+- Bu anayasa, SafeKeyRecorder projesindeki tüm süreçler için bağlayıcıdır ve çakışan dokümantasyonların üzerinde önceliğe sahiptir.
+- Değişiklik önerileri yazılı taslak, etki analizi ve hukuki değerlendirme ile birlikte ekip oy çokluğu ile onaylanmalıdır.
+- Anayasa sürümleri SemVer uygular: ilke değişiklikleri veya eklemeleri minör/major artış, ufak netleştirmeler patch artışı gerektirir.
+- Her çeyrek başında uyum incelemesi yapılır; sapmalar tespit edilirse 2 hafta içinde düzeltme planı hazırlanmalıdır.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 2.0.0 | **Ratified**: 2025-09-30 | **Last Amended**: 2025-10-04

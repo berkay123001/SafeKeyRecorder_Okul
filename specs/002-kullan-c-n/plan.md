@@ -1,8 +1,8 @@
 
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Consent-Based Webhook Export
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `002-kullan-c-n` | **Date**: 2025-10-01 | **Spec**: `specs/002-kullan-c-n/spec.md`
+**Input**: Feature specification from `/specs/002-kullan-c-n/spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
@@ -31,102 +31,59 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-[Extract from feature spec: primary requirement + technical approach from research]
+Uygulama, kullanıcının açık onayı olmadan hiçbir veri paylaşmayan mevcut kayıt mimarisine yeni bir manuel dışa aktarma adımı ekleyecek. Kullanıcı gönderim panelinden işlemi başlattığında, `session_log.txt` dosyası önceden tanımlı kurumsal webhook adresine TLS korumalı HTTP POST isteğiyle iletilecek, paylaşılan gizli anahtar `Authorization: Bearer <token>` başlığında taşınacak ve sonuç başarılı/başarısız olarak kullanıcıya bildirilecek. Denetim için tüm denemeler kaydedilecek ve başarısızlık durumlarında kullanıcı dosyanın yerelde kaldığını görecek.
 
 ## Technical Context
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: C# / .NET 8  
+**Primary Dependencies**: Avalonia UI, `System.Net.Http` (`HttpClient`), `Microsoft.Extensions.Configuration`  
+**Storage**: Yerel dosya sistemi (`session_log.txt`, yapılandırma dosyaları)  
+**Testing**: xUnit, Avalonia Headless runner, Playwright (mevcut altyapı)  
+**Target Platform**: Masaüstü (Windows, Linux, macOS)  
+**Project Type**: Tek masaüstü uygulama (Avalonia)  
+**Performance Goals**: Webhook çağrıları ≤3 saniyede tamamlanmalı veya kullanıcıya hata bildirimi sunulmalı  
+**Constraints**: Tek hedef webhook, TLS zorunlu, kullanıcı onayı olmadan gönderim yapılamaz, paylaşılan gizli anahtarın güvenli saklanması  
+**Scale/Scope**: Düşük hacimli log dosyaları (KB–MB), manuel tetiklenen gönderimler; aynı anda tek gönderim beklenir
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- Kod Kalitesi: Tüm yeni artefaktlar için test kapsamı ve statik analiz raporları sağlandı mı?
-- Şeffaflık ve Bilgilendirme: Kullanıcı bilgilendirme ve rıza akışları planlandı mı?
-- Veri Gizliliği ve Rıza: Kalıcı depolama varsayılan kapalı mı, imha prosedürü tanımlı mı?
-- Sorumluluk ve Hukuki Uyum: Çözüm KVKK/GDPR değerlendirmesi içeriyor mu?
-- Simülasyon Sınırları: Çalışma ortamı izole mi ve gerçek sistemlere etkisi yok mu?
+- Kod Kalitesi: Webhook servisine ait birim testleri, başarısız/success durumlarını kapsayan sözleşme ve entegrasyon testleri yazılacak; mevcut .NET analyzer'ları ve CI boru hattı kullanılmaya devam edecek.
+- Şeffaflık ve Bilgilendirme: Onay diyaloğu kullanıcıya gönderilecek veri ve hedef adresi gösteriyor; sonuç ekranı işlemin durumunu açıkça paylaşıyor.
+- Veri Gizliliği ve Rıza: Gönderim varsayılan olarak kapalı, yalnızca anlık kullanıcı onayıyla tetikleniyor; başarısızlıkta veri cihazdan çıkmıyor ve kullanıcı isterse logları silebiliyor.
+- Sorumluluk ve Hukuki Uyum: Webhook sadece proje yönetişimi tarafından belirlenen kurumsal uç noktaya gidiyor; denetim günlüğü KVKK/GDPR raporlaması için tutuluyor ve kullanıcı iptal hakkı korunuyor.
+- Simülasyon Sınırları: Otomatik veya arka plan gönderimi yok; tek yönlü HTTPS çağrısı ile sınırlı, gerçek sistemlere zarar verme riski bulunmuyor.
 
 ## Project Structure
 
 ### Documentation (this feature)
 ```
-specs/[###-feature]/
-├── plan.md              # This file (/plan command output)
-├── research.md          # Phase 0 output (/plan command)
-├── data-model.md        # Phase 1 output (/plan command)
-├── quickstart.md        # Phase 1 output (/plan command)
-├── contracts/           # Phase 1 output (/plan command)
-└── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
+specs/002-kullan-c-n/
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
+├── contracts/
+└── tasks.md (Phase 2'de üretilecek)
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
 src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+└── SafeKeyRecorder/
+    ├── Models/
+    ├── Services/
+    ├── Telemetry/
+    ├── ViewModels/
+    └── Views/
 
 tests/
-├── contract/
-├── integration/
-└── unit/
+└── SafeKeyRecorder.Tests/
+    ├── Contracts/
+    ├── Integration/
+    ├── UiAutomation/
+    └── Unit/
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
-```
-
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
-
-## Phase 0: Outline & Research
-1. **Extract unknowns from Technical Context** above:
-   - For each NEEDS CLARIFICATION → research task
-   - For each dependency → best practices task
-   - For each integration → patterns task
-
-2. **Generate and dispatch research agents**:
-   ```
-   For each unknown in Technical Context:
-     Task: "Research {unknown} for {feature context}"
-   For each technology choice:
-     Task: "Find best practices for {tech} in {domain}"
-   ```
-
-3. **Consolidate findings** in `research.md` using format:
+**Structure Decision**: Tek Avalonia masaüstü projesi. Webhook gönderim servisi `src/SafeKeyRecorder/Services/` altında genişletilecek; denetim ve telemetri akışları `Telemetry/` klasöründe yönetilecek. Kullanıcı onay ve sonuç UI akışları `ViewModels` ile `Views` katmanlarında güncellenecek, xUnit testler `tests/SafeKeyRecorder.Tests/` altındaki mevcut klasörlerde sürdürülecek.
    - Decision: [what was chosen]
    - Rationale: [why chosen]
    - Alternatives considered: [what else evaluated]
@@ -206,7 +163,7 @@ directories captured above]
 *This checklist is updated during execution flow*
 
 **Phase Status**:
-- [ ] Phase 0: Research complete (/plan command)
+- [x] Phase 0: Research complete (/plan command)
 - [ ] Phase 1: Design complete (/plan command)
 - [ ] Phase 2: Task planning complete (/plan command - describe approach only)
 - [ ] Phase 3: Tasks generated (/tasks command)
@@ -214,9 +171,9 @@ directories captured above]
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
-- [ ] Initial Constitution Check: PASS
+- [x] Initial Constitution Check: PASS
 - [ ] Post-Design Constitution Check: PASS
-- [ ] All NEEDS CLARIFICATION resolved
+- [x] All NEEDS CLARIFICATION resolved
 - [ ] Complexity deviations documented
 
 ---

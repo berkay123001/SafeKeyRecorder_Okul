@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="tools/playwright/README.md" Condition="Exists('tools/playwright/README.md')" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:SafeKeyRecorder.ViewModels"
+        mc:Ignorable="d"
+        x:Class="SafeKeyRecorder.Views.ConsentDialog"
+        x:DataType="viewModels:ConsentDialogViewModel"
+        Title="Rıza Gerekli"
+        Width="500"
+        Height="400"
+        WindowStartupLocation="CenterOwner"
+        d:DataContext="{d:DesignInstance Type=viewModels:ConsentDialogViewModel, IsDesignTimeCreatable=False}">
+
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
+        <ScrollViewer Grid.Row="0" Margin="16">
+            <TextBlock TextWrapping="Wrap"
+                       Text="{Binding ConsentMessage}" />
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Margin="16" Spacing="12">
+            <TextBlock TextWrapping="Wrap"
+                       Classes="Caption"
+                       Text="{Binding BackgroundConsentExplanation}" />
+            <CheckBox Content="Arka plan modunu etkinleştir"
+                      IsChecked="{Binding AllowBackgroundCapture}" />
+            <CheckBox Content="Log dosyasını etkinleştir"
+                      IsChecked="{Binding IsLoggingEnabled}" />
+            <CheckBox Content="Oturum kapanışında logu sil"
+                      IsChecked="{Binding IsAutoDeleteRequested}" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Content="Devam"
+                        Command="{Binding AcceptCommand}" />
+                <Button Content="Vazgeç"
+                        Command="{Binding DeclineCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

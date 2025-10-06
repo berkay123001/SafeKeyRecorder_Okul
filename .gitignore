@@ -1,0 +1,31 @@
+# Build output
+bin/
+obj/
+
+# Avalonia build cache
+*.axaml.cs.bin
+
+# User-specific files
+*.user
+*.suo
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+.windsurf/
+.specify/
+
+# Dotnet local tools
+.dotnet-tools/
+
+# Logs
+*.log
+Logs/
+
+# Telemetry queue data
+SafeKeyRecorder/telemetry/
+
+# OS artifacts
+.DS_Store
+Thumbs.db

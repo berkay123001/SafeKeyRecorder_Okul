@@ -1,0 +1,39 @@
+.
+├── clean_tree.txt
+├── Directory.Build.props
+├── project_tree.txt
+├── specs
+│   └── 001-bu-uygulama-c
+│       ├── contracts
+│       ├── data-model.md
+│       ├── plan.md
+│       ├── quickstart.md
+│       ├── research.md
+│       ├── spec.md
+│       └── tasks.md
+├── src
+│   └── SafeKeyRecorder
+│       ├── App.axaml
+│       ├── App.axaml.cs
+│       ├── app.manifest
+│       ├── MainWindow.axaml
+│       ├── MainWindow.axaml.cs
+│       ├── Models
+│       ├── Program.cs
+│       ├── Resources
+│       ├── SafeKeyRecorder.csproj
+│       ├── Services
+│       ├── Telemetry
+│       └── ViewModels
+└── tests
+    └── SafeKeyRecorder.Tests
+        ├── Accessibility
+        ├── Contracts
+        ├── GlobalUsings.cs
+        ├── Integration
+        ├── SafeKeyRecorder.Tests.csproj
+        ├── UiAutomation
+        ├── Unit
+        └── UnitTest1.cs
+
+18 directories, 19 files

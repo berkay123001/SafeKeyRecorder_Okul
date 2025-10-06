@@ -1,0 +1,38 @@
+{
+  "title": "SessionLogging",
+  "version": "1.0.0",
+  "description": "Specifies the optional local logging behavior for SafeKeyRecorder sessions.",
+  "filePath": "~/SafeKeyRecorder/session_log.txt",
+  "entryFormat": "{ISO8601 timestamp}, {key symbol}",
+  "retention": {
+    "autoDeleteHours": 24,
+    "manualDeleteOption": true
+  },
+  "operations": [
+    {
+      "name": "AppendKey",
+      "preconditions": [
+        "ConsentSession.LoggingEnabled == true",
+        "File exists and writable"
+      ],
+      "inputs": {
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "keySymbol": { "type": "string" },
+        "modifiers": { "type": "array", "items": { "type": "string" } }
+      },
+      "postconditions": [
+        "Line appended in entryFormat",
+        "Audit log emits transparency event"
+      ]
+    },
+    {
+      "name": "PurgeNow",
+      "preconditions": ["User selected autoDelete or manual purge"],
+      "postconditions": [
+        "File deleted",
+        "In-memory buffer cleared",
+        "User notified of purge"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "title": "ConsentFlow",
+  "version": "1.0.0",
+  "description": "Defines the consent dialog interactions for SafeKeyRecorder.",
+  "states": [
+    {
+      "name": "AwaitingConsent",
+      "ui": {
+        "heading": "Bu uygulama bir keylogger simülasyonudur.",
+        "body": "Yazdığınız tuşlar, yalnızca bu bilgisayarda ve bu oturum boyunca kayıt altına alınacaktır. Devam etmek istiyor musunuz?"
+      },
+      "actions": [
+        {
+          "label": "Devam",
+          "result": "ConsentGranted",
+          "requirements": [
+            "User must check optional logging toggle to enable file logging"
+          ]
+        },
+        {
+          "label": "Vazgeç",
+          "result": "ConsentDenied"
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "consentState": {
+      "type": "object",
+      "properties": {
+        "consentGranted": { "type": "boolean" },
+        "loggingEnabled": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["consentGranted", "timestamp"]
+    }
+  }
+}

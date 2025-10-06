@@ -3,7 +3,8 @@
 **Feature Branch**: `[###-feature-name]`  
 **Created**: [DATE]  
 **Status**: Draft  
-**Input**: User description: "$ARGUMENTS"
+**Input**: User description: "$ARGUMENTS"  
+**Constitution Reference**: SafeKeyRecorder Constitution v1.0.0
 
 ## Execution Flow (main)
 ```
@@ -13,16 +14,18 @@
    → Identify: actors, actions, data, constraints
 3. For each unclear aspect:
    → Mark with [NEEDS CLARIFICATION: specific question]
-4. Fill User Scenarios & Testing section
+4. Validate consent, şeffaflık ve veri gizliliği gereksinimlerini çıkar
+   → Kullanıcı bilgilendirmesi, onay akışı ve veri imha kuralları tanımlı mı?
+5. Fill User Scenarios & Testing section
    → If no clear user flow: ERROR "Cannot determine user scenarios"
-5. Generate Functional Requirements
+6. Generate Functional Requirements
    → Each requirement must be testable
    → Mark ambiguous requirements
-6. Identify Key Entities (if data involved)
-7. Run Review Checklist
+7. Identify Key Entities (if data involved)
+8. Run Review Checklist
    → If any [NEEDS CLARIFICATION]: WARN "Spec has uncertainties"
    → If implementation details found: ERROR "Remove tech details"
-8. Return: SUCCESS (spec ready for planning)
+9. Return: SUCCESS (spec ready for planning)
 ```
 
 ---
@@ -31,6 +34,8 @@
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
 - 👥 Written for business stakeholders, not developers
+- 🔒 Kullanıcı rızası, veri saklama sınırları ve simülasyon kapsamını açıkça tanımla
+- 🪪 Şeffaflık mesajları ve etik kullanım kısıtlarını dokümante et
 
 ### Section Requirements
 - **Mandatory sections**: Must be completed for every feature
@@ -67,22 +72,22 @@ When creating this spec from a user prompt:
 
 ## Requirements *(mandatory)*
 
-### Functional Requirements
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
 - **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
-
-*Example of marking unclear requirements:*
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+- **FR-008**: System MUST obtain explicit user consent before any keylogging simulation starts
+- **FR-009**: System MUST provide real-time transparency indicators while capturing inputs
+- **FR-010**: System MUST support immediate data purge on user request
+- **FR-011**: System MUST respect user privacy and only capture data explicitly allowed by user
+- **FR-012**: System MUST ensure that all captured data is encrypted and secure
 
 ### Key Entities *(include if feature involves data)*
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
-
----
 
 ## Review & Acceptance Checklist
 *GATE: Automated checks run during main() execution*
@@ -92,6 +97,7 @@ When creating this spec from a user prompt:
 - [ ] Focused on user value and business needs
 - [ ] Written for non-technical stakeholders
 - [ ] All mandatory sections completed
+- [ ] Etik kullanım kısıtları ve simülasyon sınırları tanımlandı
 
 ### Requirement Completeness
 - [ ] No [NEEDS CLARIFICATION] markers remain
@@ -99,6 +105,7 @@ When creating this spec from a user prompt:
 - [ ] Success criteria are measurable
 - [ ] Scope is clearly bounded
 - [ ] Dependencies and assumptions identified
+- [ ] Kullanıcı rızası, veri imhası ve şeffaflık gereksinimleri açık
 
 ---
 
@@ -112,5 +119,14 @@ When creating this spec from a user prompt:
 - [ ] Requirements generated
 - [ ] Entities identified
 - [ ] Review checklist passed
+
+---
+
+## Ethical & Privacy Considerations *(mandatory)*
+
+- **Consent Flow**: [Describe how and when the user grants explicit permission]
+- **Transparency Mechanisms**: [Outline notifications, UI indicators, or logs shown during simulation]
+- **Data Handling & Retention**: [Specify storage strategy, retention duration, and purge triggers]
+- **Simulation Boundaries**: [Clarify isolation scope, prohibited behaviors, and environment restrictions]
 
 ---

@@ -18,23 +18,19 @@
    → Core: models, services, CLI commands
    → Integration: DB, middleware, logging
    → Polish: unit tests, performance, docs
+   → Ethics & Privacy: consent UI, veri imha mekanizmaları, şeffaflık göstergeleri
 4. Apply task rules:
    → Different files = mark [P] for parallel
    → Same file = sequential (no [P])
    → Tests before implementation (TDD)
 5. Number tasks sequentially (T001, T002...)
-6. Generate dependency graph
 7. Create parallel execution examples
 8. Validate task completeness:
    → All contracts have tests?
    → All entities have models?
    → All endpoints implemented?
+   → User consent flow, transparency indicators, and data minimization tasks defined?
 9. Return: SUCCESS (tasks ready for execution)
-```
-
-## Format: `[ID] [P?] Description`
-- **[P]**: Can run in parallel (different files, no dependencies)
-- Include exact file paths in descriptions
 
 ## Path Conventions
 - **Single project**: `src/`, `tests/` at repository root
@@ -46,41 +42,49 @@
 - [ ] T001 Create project structure per implementation plan
 - [ ] T002 Initialize [language] project with [framework] dependencies
 - [ ] T003 [P] Configure linting and formatting tools
+- [ ] T004 Define consent prompt messaging and transparency indicators
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
-- [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
-- [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
-- [ ] T006 [P] Integration test user registration in tests/integration/test_registration.py
-- [ ] T007 [P] Integration test auth flow in tests/integration/test_auth.py
+- [ ] T005 [P] Contract test POST /api/users in tests/contract/test_users_post.py
+- [ ] T006 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
+- [ ] T007 [P] Integration test user registration in tests/integration/test_registration.py
+- [ ] T008 [P] Integration test auth flow in tests/integration/test_auth.py
+- [ ] T009 Transparency indicator test in tests/integration/test_transparency.py
+- [ ] T010 Consent flow regression test in tests/integration/test_consent.py
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
-- [ ] T008 [P] User model in src/models/user.py
-- [ ] T009 [P] UserService CRUD in src/services/user_service.py
-- [ ] T010 [P] CLI --create-user in src/cli/user_commands.py
-- [ ] T011 POST /api/users endpoint
-- [ ] T012 GET /api/users/{id} endpoint
-- [ ] T013 Input validation
-- [ ] T014 Error handling and logging
+- [ ] T011 [P] User model in src/models/user.py
+- [ ] T012 [P] UserService CRUD in src/services/user_service.py
+- [ ] T013 [P] CLI --create-user in src/cli/user_commands.py
+- [ ] T014 POST /api/users endpoint
+- [ ] T015 GET /api/users/{id} endpoint
+- [ ] T016 Input validation
+- [ ] T017 Error handling and logging
+- [ ] T018 Consent enforcement middleware in src/middleware/consent.py
+- [ ] T019 Transparency UI overlay in src/ui/transparency.py
 
 ## Phase 3.4: Integration
-- [ ] T015 Connect UserService to DB
-- [ ] T016 Auth middleware
-- [ ] T017 Request/response logging
-- [ ] T018 CORS and security headers
+- [ ] T020 Connect UserService to DB
+- [ ] T021 Auth middleware
+- [ ] T022 Request/response logging
+- [ ] T023 CORS and security headers
+- [ ] T024 Secure in-memory buffer with timed purge
 
 ## Phase 3.5: Polish
-- [ ] T019 [P] Unit tests for validation in tests/unit/test_validation.py
-- [ ] T020 Performance tests (<200ms)
-- [ ] T021 [P] Update docs/api.md
-- [ ] T022 Remove duplication
-- [ ] T023 Run manual-testing.md
+- [ ] T025 [P] Unit tests for validation in tests/unit/test_validation.py
+- [ ] T026 Performance tests (<200ms)
+- [ ] T027 [P] Update docs/api.md
+- [ ] T028 Remove duplication
+- [ ] T029 Run manual-testing.md
+- [ ] T030 Verify purge command clears all in-memory buffers
 
 ## Dependencies
-- Tests (T004-T007) before implementation (T008-T014)
-- T008 blocks T009, T015
-- T016 blocks T018
-- Implementation before polish (T019-T023)
+- Tests (T005-T010) before implementation (T011-T019)
+- T011 blocks T012, T020
+- T021 blocks T023
+- Implementation before polish (T025-T030)
+- Ethics tasks (T018-T024, T030) must show PASS before release
 
 ## Parallel Example
 ```

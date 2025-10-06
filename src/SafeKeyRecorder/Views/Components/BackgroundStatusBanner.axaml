@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="SafeKeyRecorder.Views.Components.BackgroundStatusBanner">
+    <Border x:Name="BackgroundBannerBorder"
+            Padding="12"
+            CornerRadius="6"
+            Background="{Binding BackgroundBrush}"
+            IsVisible="{Binding IsVisible}">
+        <DockPanel>
+            <ToggleSwitch x:Name="BackgroundToggleSwitch"
+                          DockPanel.Dock="Right"
+                          Margin="12,0,0,0"
+                          Width="180"
+                          HorizontalAlignment="Right"
+                          IsChecked="{Binding IsToggleChecked}">
+                <ToggleSwitch.OnContent>Görünür</ToggleSwitch.OnContent>
+                <ToggleSwitch.OffContent>Gizle</ToggleSwitch.OffContent>
+            </ToggleSwitch>
+
+            <TextBlock x:Name="BackgroundBannerMessage"
+                       x:FieldModifier="public"
+                       Text="{Binding Message}"
+                       TextWrapping="Wrap"
+                       FontWeight="SemiBold" />
+        </DockPanel>
+    </Border>
+</UserControl>

@@ -1,0 +1,29 @@
+src/
+└── SafeKeyRecorder
+    ├── App.axaml
+    ├── App.axaml.cs
+    ├── app.manifest
+    ├── bin
+    │   └── Debug
+    ├── MainWindow.axaml
+    ├── MainWindow.axaml.cs
+    ├── Models
+    │   ├── AccessibilityPreference.cs
+    │   ├── ConsentSession.cs
+    │   └── SessionLogEntry.cs
+    ├── obj
+    │   ├── Debug
+    │   ├── project.assets.json
+    │   ├── project.nuget.cache
+    │   ├── SafeKeyRecorder.csproj.nuget.dgspec.json
+    │   ├── SafeKeyRecorder.csproj.nuget.g.props
+    │   └── SafeKeyRecorder.csproj.nuget.g.targets
+    ├── Program.cs
+    ├── Resources
+    ├── SafeKeyRecorder.csproj
+    ├── Services
+    │   └── SessionLogService.cs
+    ├── Telemetry
+    └── ViewModels
+
+11 directories, 16 files
