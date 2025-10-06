@@ -1,3 +1,10 @@
+# Etik Eğitim Sürümü
+
+> Bu proje yalnızca eğitim ve ödev amaçlıdır.  
+> Kullanıcı açık rızası olmadan hiçbir kayıt yapılmaz.  
+> Arka plan modu yalnızca bilgilendirilmiş onay ile çalışır.  
+> Kötüye kullanım veya gizli izleme geliştiricinin sorumluluğunda değildir.
+
 # SafeKeyRecorder
 
 SafeKeyRecorder, Avalonia UI ve MVVM mimarisiyle geliştirilmiş, kullanıcının açık rızasına dayanan bir tuş yakalama ve telemetri uygulamasıdır. Amaç; erişilebilirlik araştırmaları, uyumluluk denetimleri ve kullanıcıların bilgilendirilmiş onay verdiği senaryolarda arka plan tuş izleme ve kayıt süreçlerini güvenli, şeffaf ve etik biçimde yönetmektir.

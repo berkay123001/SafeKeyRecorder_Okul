@@ -29,6 +29,7 @@ public sealed class KeyCaptureService : IKeyCaptureSink
         string keySymbol,
         bool isPrintable,
         string[]? modifiers = null,
+        bool fromGlobalHook = false,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(keySymbol))
@@ -56,8 +57,20 @@ public sealed class KeyCaptureService : IKeyCaptureSink
             normalizedModifiers,
             _session.LoggingEnabled);
 
-        KeyCaptured?.Invoke(this, entry);
+        if (!fromGlobalHook)
+        {
+            KeyCaptured?.Invoke(this, entry);
+        }
 
         await _sessionLogService.AppendAsync(entry, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task CaptureFromForegroundAsync(
+        string keySymbol,
+        bool isPrintable,
+        string[]? modifiers = null,
+        CancellationToken cancellationToken = default)
+    {
+        await CaptureAsync(keySymbol, isPrintable, modifiers, fromGlobalHook: false, cancellationToken).ConfigureAwait(false);
     }
 }

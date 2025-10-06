@@ -9,7 +9,7 @@ obj/
 *.user
 *.suo
 
-# IDE settings
+# IDE settings / local workspace metadata
 .vscode/
 .idea/
 *.swp

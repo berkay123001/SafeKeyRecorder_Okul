@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using Avalonia;
 using Avalonia.Controls;
@@ -12,11 +13,12 @@ namespace SafeKeyRecorder.Tray;
 
 public sealed class BackgroundStatusTrayIcon : IDisposable
 {
-    private readonly TrayIcon _trayIcon;
+    private readonly TrayIcon? _trayIcon;
     private readonly BackgroundStatusBannerViewModel _banner;
     private readonly WindowIcon _backgroundIcon;
     private readonly WindowIcon _foregroundIcon;
     private readonly WindowIcon _idleIcon;
+    private readonly bool _isTrayAvailable;
     private bool _disposed;
 
     public BackgroundStatusTrayIcon(Window owner, BackgroundStatusBannerViewModel banner)
@@ -32,26 +34,44 @@ public sealed class BackgroundStatusTrayIcon : IDisposable
         _foregroundIcon = CreateIcon(Color.FromRgb(144, 238, 144));
         _idleIcon = CreateIcon(Color.FromRgb(160, 160, 160));
 
-        _trayIcon = new TrayIcon
-        {
-            Icon = _idleIcon,
-            ToolTipText = "Kayıt pasif.",
-            IsVisible = true
-        };
+        _isTrayAvailable = IsTraySupported();
 
-        _trayIcon.Clicked += (_, _) =>
+        if (!_isTrayAvailable)
         {
-            if (owner.WindowState == WindowState.Minimized)
+            Debug.WriteLine("[SafeKeyRecorder] Sistem tepsisi bu platformda devre dışı (TrayIcon desteklenmiyor).");
+            return;
+        }
+
+        try
+        {
+            _trayIcon = new TrayIcon
             {
-                owner.WindowState = WindowState.Normal;
-            }
+                Icon = _idleIcon,
+                ToolTipText = "Kayıt pasif.",
+                IsVisible = true
+            };
 
-            owner.Show();
-            owner.Activate();
-        };
+            _trayIcon.Clicked += (_, _) =>
+            {
+                if (owner.WindowState == WindowState.Minimized)
+                {
+                    owner.WindowState = WindowState.Normal;
+                }
+
+                owner.Show();
+                owner.Activate();
+            };
+
+        }
+        catch (Exception ex)
+        {
+            _isTrayAvailable = false;
+            _trayIcon = null;
+            Debug.WriteLine($"[SafeKeyRecorder] Sistem tepsisi oluşturulamadı: {ex.Message}");
+            return;
+        }
 
         _banner.StateChanged += OnBannerStateChanged;
-        _banner.ToggleChanged += OnBannerToggleChanged;
 
         UpdateTrayIcon();
     }
@@ -66,18 +86,23 @@ public sealed class BackgroundStatusTrayIcon : IDisposable
         _disposed = true;
 
         _banner.StateChanged -= OnBannerStateChanged;
-        _banner.ToggleChanged -= OnBannerToggleChanged;
 
-        _trayIcon.IsVisible = false;
-        _trayIcon.Dispose();
+        if (_trayIcon is not null)
+        {
+            _trayIcon.IsVisible = false;
+            _trayIcon.Dispose();
+        }
     }
 
     private void OnBannerStateChanged(object? sender, EventArgs e) => UpdateTrayIcon();
 
-    private void OnBannerToggleChanged(object? sender, bool _) => UpdateTrayIcon();
-
     private void UpdateTrayIcon()
     {
+        if (_disposed || !_isTrayAvailable || _trayIcon is null)
+        {
+            return;
+        }
+
         if (Dispatcher.UIThread.CheckAccess())
         {
             ApplyTrayState();
@@ -90,22 +115,41 @@ public sealed class BackgroundStatusTrayIcon : IDisposable
 
     private void ApplyTrayState()
     {
-        _trayIcon.IsVisible = _banner.IsVisible;
+        if (_disposed || !_isTrayAvailable || _trayIcon is null)
+        {
+            return;
+        }
+
+        var shouldShow = _banner.IsVisible;
+
+        WindowIcon icon;
+        string tooltip;
 
         switch (_banner.VisualState)
         {
             case BannerVisualState.Background:
-                _trayIcon.Icon = _backgroundIcon;
-                _trayIcon.ToolTipText = "Arka plan kayıt modu aktif.";
+                icon = _backgroundIcon;
+                tooltip = "Arka plan kayıt modu aktif.";
                 break;
             case BannerVisualState.Foreground:
-                _trayIcon.Icon = _foregroundIcon;
-                _trayIcon.ToolTipText = "Arka plan modu kapalı. Odak içi kayıt sürüyor.";
+                icon = _foregroundIcon;
+                tooltip = "Arka plan modu kapalı. Odak içi kayıt sürüyor.";
                 break;
             default:
-                _trayIcon.Icon = _idleIcon;
-                _trayIcon.ToolTipText = "Kayıt pasif.";
+                icon = _idleIcon;
+                tooltip = "Kayıt pasif.";
                 break;
+        }
+
+        if (shouldShow)
+        {
+            _trayIcon.Icon = icon;
+            _trayIcon.ToolTipText = tooltip;
+            _trayIcon.IsVisible = true;
+        }
+        else
+        {
+            _trayIcon.IsVisible = false;
         }
     }
 
@@ -125,5 +169,19 @@ public sealed class BackgroundStatusTrayIcon : IDisposable
         stream.Position = 0;
 
         return new WindowIcon(stream);
+    }
+
+    private static bool IsTraySupported()
+    {
+        // Avalonia's TrayIcon currently has stable support on Windows and macOS.
+        // Linux support depends on libappindicator / StatusNotifier availability and is unstable.
+
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+        {
+            return true;
+        }
+
+        // Best-effort: disable on other platforms to avoid runtime crashes.
+        return false;
     }
 }

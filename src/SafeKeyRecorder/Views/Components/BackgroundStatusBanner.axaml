@@ -15,14 +15,15 @@
                           Margin="12,0,0,0"
                           Width="180"
                           HorizontalAlignment="Right"
-                          IsChecked="{Binding IsToggleChecked}">
+                          IsChecked="True"
+                          IsEnabled="False">
                 <ToggleSwitch.OnContent>Görünür</ToggleSwitch.OnContent>
-                <ToggleSwitch.OffContent>Gizle</ToggleSwitch.OffContent>
             </ToggleSwitch>
 
             <TextBlock x:Name="BackgroundBannerMessage"
                        x:FieldModifier="public"
                        Text="{Binding Message}"
+                       Foreground="White"
                        TextWrapping="Wrap"
                        FontWeight="SemiBold" />
         </DockPanel>

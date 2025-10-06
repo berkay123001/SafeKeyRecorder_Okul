@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpHook;
@@ -17,6 +18,8 @@ public sealed class GlobalHookAdapter : IGlobalHookAdapter, IDisposable
     private CancellationTokenSource? _hookCts;
     private Task? _hookTask;
     private bool _disposed;
+    private KeyCode? _lastPrintableKeyCode;
+    private DateTimeOffset _lastPrintableTimestamp;
 
     public GlobalHookAdapter(IKeyCaptureSink captureSink)
     {
@@ -78,7 +81,16 @@ public sealed class GlobalHookAdapter : IGlobalHookAdapter, IDisposable
             _hookCts = null;
             hookTask = _hookTask;
             _hookTask = null;
-            _globalHook.Stop();
+
+            try
+            {
+                _globalHook.Stop();
+            }
+            catch (HookException ex)
+            {
+                Debug.WriteLine($"[SafeKeyRecorder] Global hook stop hatası yoksayıldı: {ex.Message}");
+            }
+
             _globalHook.Dispose();
             _globalHook = null;
         }
@@ -121,14 +133,17 @@ public sealed class GlobalHookAdapter : IGlobalHookAdapter, IDisposable
         }
 
         QueueCapture(data.KeyChar.ToString(), true, GetModifiers(e.RawEvent.Mask));
+
+        _lastPrintableKeyCode = data.KeyCode;
+        _lastPrintableTimestamp = DateTimeOffset.UtcNow;
     }
 
     private void OnKeyPressed(object? sender, KeyboardHookEventArgs e)
     {
         var data = e.Data;
-        var isPrintable = data.KeyChar != KeyboardEventData.UndefinedChar && !char.IsControl(data.KeyChar);
+        var isPrintableChar = data.KeyChar != KeyboardEventData.UndefinedChar && !char.IsControl(data.KeyChar);
 
-        if (isPrintable)
+        if (isPrintableChar || IsRecentPrintableKey(data.KeyCode))
         {
             // KeyTyped event will handle printable keys to avoid duplicates
             return;
@@ -144,7 +159,7 @@ public sealed class GlobalHookAdapter : IGlobalHookAdapter, IDisposable
             return;
         }
 
-        _ = Task.Run(() => _captureSink.CaptureAsync(keySymbol, isPrintable, modifiers, CancellationToken.None));
+        _ = Task.Run(() => _captureSink.CaptureAsync(keySymbol, isPrintable, modifiers, fromGlobalHook: true, cancellationToken: CancellationToken.None));
     }
 
     private static string[] GetModifiers(EventMask mask)
@@ -167,6 +182,21 @@ public sealed class GlobalHookAdapter : IGlobalHookAdapter, IDisposable
         }
 
         return modifiers.ToArray();
+    }
+
+    private bool IsRecentPrintableKey(KeyCode keyCode)
+    {
+        if (_lastPrintableKeyCode is null)
+        {
+            return false;
+        }
+
+        if (_lastPrintableKeyCode.Value != keyCode)
+        {
+            return false;
+        }
+
+        return (DateTimeOffset.UtcNow - _lastPrintableTimestamp) <= TimeSpan.FromMilliseconds(200);
     }
 
     private void RunHookAsync(CancellationToken cancellationToken)

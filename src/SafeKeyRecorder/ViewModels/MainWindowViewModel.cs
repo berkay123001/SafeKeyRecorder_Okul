@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using SafeKeyRecorder.Background;
 using SafeKeyRecorder.Models;
 using SafeKeyRecorder.Services;
@@ -20,12 +21,13 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly Func<Task<ConsentDecision?>> _showConsentDialogAsync;
     private readonly BackgroundConsentCoordinator _consentCoordinator;
     private readonly BackgroundResumeCoordinator _resumeCoordinator;
-    private bool _backgroundConsentGranted;
 
     private ConsentSession? _currentSession;
     private string _consentStatus = "Rıza bekleniyor.";
     private string _loggingPathMessage = string.Empty;
     private bool _isLoggingPathVisible;
+    private string _permissionSummary = string.Empty;
+    private bool _isPermissionSummaryVisible;
     private bool _isRecording;
     private string _accessibilityStatus = "Varsayılan tema";
     private readonly BackgroundStatusBannerViewModel _backgroundBanner;
@@ -53,12 +55,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         StartConsentCommand = new RelayCommand(StartConsentFlowAsync);
         PurgeLogCommand = new RelayCommand(PurgeLogAsync, _ => _currentSession is not null);
+        OpenConsentSettingsCommand = new RelayCommand(OpenConsentSettingsAsync, _ => _currentSession is not null);
 
         _keyCaptureService.KeyCaptured += OnKeyCaptured;
         _sessionLogService.LogAppended += OnLogAppended;
         _sessionLogService.LogPurged += OnLogPurged;
         _accessibilityService.PreferenceChanged += OnAccessibilityChanged;
-        _backgroundBanner.ToggleChanged += OnBackgroundToggleChanged;
 
         _backgroundBanner.ShowPassive("Kayıt pasif.");
     }
@@ -110,6 +112,36 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
+    public string PermissionSummary
+    {
+        get => _permissionSummary;
+        private set
+        {
+            if (_permissionSummary == value)
+            {
+                return;
+            }
+
+            _permissionSummary = value;
+            RaisePropertyChanged();
+        }
+    }
+
+    public bool IsPermissionSummaryVisible
+    {
+        get => _isPermissionSummaryVisible;
+        private set
+        {
+            if (_isPermissionSummaryVisible == value)
+            {
+                return;
+            }
+
+            _isPermissionSummaryVisible = value;
+            RaisePropertyChanged();
+        }
+    }
+
     public BackgroundStatusBannerViewModel BackgroundBanner => _backgroundBanner;
 
     public bool IsRecording
@@ -146,6 +178,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public RelayCommand PurgeLogCommand { get; }
 
+    public RelayCommand OpenConsentSettingsCommand { get; }
+
     public async Task CaptureKeyAsync(string keySymbol, bool isPrintable, string[] modifiers)
     {
         if (!IsRecording)
@@ -153,7 +187,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        await _keyCaptureService.CaptureAsync(keySymbol, isPrintable, modifiers).ConfigureAwait(false);
+        await _keyCaptureService.CaptureFromForegroundAsync(keySymbol, isPrintable, modifiers).ConfigureAwait(false);
     }
 
     private async Task StartConsentFlowAsync(object? parameter)
@@ -196,8 +230,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             IsRecording = false;
             _currentSession = null;
             PurgeLogCommand.RaiseCanExecuteChanged();
+            OpenConsentSettingsCommand.RaiseCanExecuteChanged();
+            IsPermissionSummaryVisible = false;
+            PermissionSummary = string.Empty;
             _resumeCoordinator.DisableBackgroundCapture();
-            _backgroundConsentGranted = false;
             return;
         }
 
@@ -213,9 +249,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         _auditLogger.LogRetentionDecision(session);
 
         _currentSession = session;
-        ConsentStatus = "Rıza alındı.";
+        ConsentStatus = "Rıza alındı. İzinler kaydedildi.";
         IsRecording = true;
         PurgeLogCommand.RaiseCanExecuteChanged();
+        OpenConsentSettingsCommand.RaiseCanExecuteChanged();
 
         LogEntries.Clear();
 
@@ -229,6 +266,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         IsLoggingPathVisible = true;
+        PermissionSummary = BuildPermissionSummary(decision);
+        IsPermissionSummaryVisible = true;
 
         _backgroundBanner.ShowPassive(
             decision.LoggingEnabled
@@ -240,26 +279,57 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         if (decision.AllowBackgroundCapture)
         {
             _resumeCoordinator.EnableBackgroundCapture();
-            _backgroundConsentGranted = true;
         }
         else
         {
             _resumeCoordinator.DisableBackgroundCapture();
-            _backgroundConsentGranted = false;
         }
     }
 
     private void OnKeyCaptured(object? sender, SessionLogEntry entry)
     {
-        var humanReadable = FormatEntry(entry);
-        LogEntries.Add(humanReadable);
+        if (entry.WasLoggedToFile)
+        {
+            // LogAppended event will render this entry.
+            return;
+        }
+
+        void AddEntry()
+        {
+            var humanReadable = FormatEntry(entry.RecordedAt, entry.KeySymbol, entry.Modifiers);
+            LogEntries.Add(humanReadable);
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            AddEntry();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(AddEntry);
+        }
     }
 
     private void OnLogAppended(object? sender, string line)
     {
-        if (!LogEntries.Contains(line))
+        void UpdateLog()
         {
-            LogEntries.Add(line);
+            var formatted = TryFormatLogLine(line);
+            if (formatted is null)
+            {
+                return;
+            }
+
+            LogEntries.Add(formatted);
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            UpdateLog();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(UpdateLog);
         }
     }
 
@@ -282,10 +352,37 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         AccessibilityStatus = states;
     }
 
-    private static string FormatEntry(SessionLogEntry entry)
+    private static string? TryFormatLogLine(string line)
     {
-        var modifiers = entry.Modifiers.Length > 0 ? $"[{string.Join('+', entry.Modifiers)}]" : string.Empty;
-        return $"{entry.RecordedAt:HH:mm:ss} {modifiers} {entry.KeySymbol}".Trim();
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return null;
+        }
+
+        var separatorIndex = line.IndexOf(',');
+        if (separatorIndex < 0)
+        {
+            return null;
+        }
+
+        var timestampPart = line[..separatorIndex].Trim();
+        var keyPart = line[(separatorIndex + 1)..].Trim();
+
+        if (!DateTimeOffset.TryParse(timestampPart, out var recordedAt))
+        {
+            recordedAt = DateTimeOffset.UtcNow;
+        }
+
+        return FormatEntry(recordedAt, keyPart, Array.Empty<string>());
+    }
+
+    private static string FormatEntry(DateTimeOffset recordedAt, string keySymbol, IReadOnlyList<string>? modifiers)
+    {
+        var modifierText = modifiers is { Count: > 0 }
+            ? $"[{string.Join('+', modifiers)}] "
+            : string.Empty;
+
+        return $"{recordedAt:HH:mm:ss.fff} {modifierText}{keySymbol}".Trim();
     }
 
     public void Dispose()
@@ -294,37 +391,23 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         _sessionLogService.LogAppended -= OnLogAppended;
         _sessionLogService.LogPurged -= OnLogPurged;
         _accessibilityService.PreferenceChanged -= OnAccessibilityChanged;
-        _backgroundBanner.ToggleChanged -= OnBackgroundToggleChanged;
+
+        if (_currentSession?.AutoDeleteRequested == true)
+        {
+            _sessionLogService.PurgeAsync().GetAwaiter().GetResult();
+        }
+
         _sessionLogService.Dispose();
         _resumeCoordinator.Dispose();
     }
 
-    private async void OnBackgroundToggleChanged(object? sender, bool enabled)
+    private Task OpenConsentSettingsAsync(object? parameter) => StartConsentFlowAsync(parameter);
+    private static string BuildPermissionSummary(ConsentDecision decision)
     {
-        if (enabled && (!_backgroundConsentGranted || _currentSession is null))
-        {
-            _backgroundBanner.ShowPassive("Arka plan modunu etkinleştirmek için rıza gerekli.");
-            return;
-        }
+        var background = decision.AllowBackgroundCapture ? "Arka plan: Açık" : "Arka plan: Kapalı";
+        var logging = decision.LoggingEnabled ? "Dosya kaydı: Açık" : "Dosya kaydı: Kapalı";
+        var retention = decision.AutoDeleteRequested ? "Otomatik silme: Açık" : "Otomatik silme: Kapalı";
 
-        try
-        {
-            await _consentCoordinator.SetBackgroundCaptureAsync(enabled, CancellationToken.None).ConfigureAwait(false);
-
-            if (enabled)
-            {
-                _resumeCoordinator.EnableBackgroundCapture();
-            }
-            else
-            {
-                _resumeCoordinator.DisableBackgroundCapture();
-            }
-        }
-        catch (Exception ex)
-        {
-            _backgroundBanner.ShowPassive($"Arka plan modu değiştirilemedi: {ex.Message}");
-            _backgroundBanner.ShowBackgroundDisabled();
-            _resumeCoordinator.DisableBackgroundCapture();
-        }
+        return $"İzinler → {background} · {logging} · {retention}";
     }
 }

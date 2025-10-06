@@ -5,5 +5,10 @@ namespace SafeKeyRecorder.Services.Abstractions;
 
 public interface IKeyCaptureSink
 {
-    Task CaptureAsync(string keySymbol, bool isPrintable, string[]? modifiers = null, CancellationToken cancellationToken = default);
+    Task CaptureAsync(
+        string keySymbol,
+        bool isPrintable,
+        string[]? modifiers = null,
+        bool fromGlobalHook = false,
+        CancellationToken cancellationToken = default);
 }
