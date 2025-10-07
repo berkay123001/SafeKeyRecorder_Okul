@@ -3,7 +3,8 @@
 > Bu proje yalnızca eğitim ve ödev amaçlıdır.  
 > Kullanıcı açık rızası olmadan hiçbir kayıt yapılmaz.  
 > Arka plan modu yalnızca bilgilendirilmiş onay ile çalışır.  
-> Kötüye kullanım veya gizli izleme geliştiricinin sorumluluğunda değildir.
+> Kötüye kullanım veya gizli izleme geliştiricinin sorumluluğunda değildir.  
+> **ÖN İZLEME SÜRÜMÜ**: Uygulama halen geliştirme aşamasındadır; bilinen veya keşfedilmemiş hatalarla karşılaşabilirsiniz.
 
 # SafeKeyRecorder
 
@@ -18,6 +19,10 @@ SafeKeyRecorder, Avalonia UI ve MVVM mimarisiyle geliştirilmiş, kullanıcını
 - **Durum bildirimleri**: `BackgroundStatusBannerViewModel` ve `BackgroundStatusTrayIcon` kullanıcıya anlık durum bilgisi verir, arka plan modunu hızlıca açıp kapamayı sağlar.
 - **Erişilebilirlik desteği**: `AccessibilityService`, kullanıcı tercihleri doğrultusunda arayüz bildirimlerini uyarlayarak deneyimi iyileştirir.
 - **Webhook ve log yönetimi**: Ana pencerede varsayılan bir webhook.site örnek adresi önceden doldurulur; kullanıcı gerekirse "+ Log Konumunu Değiştir" butonuyla kayıt dosyasının dizinini güncelleyebilir.
+
+## Demo Videosu
+
+- **Hızlı Tur**: [SafeKeyRecorder Uygulama Tanıtımı](https://youtu.be/wFUXShrq_MQ)
 
 ## Mimari Genel Bakış
 
@@ -55,6 +60,20 @@ dotnet run --project src/SafeKeyRecorder/SafeKeyRecorder.csproj
 1. Rızayı kabul ederken “Sunucuya logları gönderme izni ver” kutusunu işaretle.
 2. Ana pencerede `Webhook adresi` alanında örnek (`https://webhook.site/#!/v/example-endpoint`) URL’si yer alır; kendi uç noktanla değiştir.
 3. `Log Konumunu Değiştir` butonuyla oturum logunu kaydetmek istediğin dizini seçebilir, ardından `Sunucuya Gönder` ile içeriği webhook.site üzerinde doğrulayabilirsin.
+
+### Windows .exe Olarak Çalıştırma
+
+```bash
+dotnet publish src/SafeKeyRecorder/SafeKeyRecorder.csproj \
+  -c Release \
+  -r win-x64 \
+  --self-contained true \
+  /p:PublishSingleFile=true \
+  /p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+- Üretilen paket: `src/SafeKeyRecorder/bin/Release/net8.0/win-x64/publish/SafeKeyRecorder.exe`
+- `.pdb` dosyası hataları ayıklamak içindir; dağıtım sırasında isteğe bağlıdır.
 
 ## Testler
 
