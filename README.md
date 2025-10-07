@@ -24,6 +24,8 @@ SafeKeyRecorder, Avalonia UI ve MVVM mimarisiyle geliştirilmiş, kullanıcını
 
 - **Hızlı Tur**: [SafeKeyRecorder Uygulama Tanıtımı](https://youtu.be/wFUXShrq_MQ)
 
+  [![SafeKeyRecorder tanıtım videosu](https://img.youtube.com/vi/wFUXShrq_MQ/0.jpg)](https://youtu.be/wFUXShrq_MQ)
+
 ## Mimari Genel Bakış
 
 ```
