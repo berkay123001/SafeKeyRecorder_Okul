@@ -9,6 +9,8 @@ using SafeKeyRecorder.Telemetry;
 using SafeKeyRecorder.ViewModels;
 using SafeKeyRecorder.Views;
 using SafeKeyRecorder.Tray;
+using SafeKeyRecorder.Configuration;
+using System.Net.Http;
 
 namespace SafeKeyRecorder;
 
@@ -44,6 +46,17 @@ public partial class MainWindow : Window
         _consentCoordinator = new BackgroundConsentCoordinator(_captureService, _telemetryExporter, _auditLogger, _bannerViewModel);
         _resumeCoordinator = new BackgroundResumeCoordinator(_captureService, _telemetryExporter, _lockMonitor);
 
+        var webhookOptions = new WebhookOptions
+        {
+            Endpoint = "https://webhook.site/#!/v/example-endpoint",
+            BearerToken = string.Empty
+        };
+        var webhookHttpClient = new HttpClient
+        {
+            Timeout = webhookOptions.RequestTimeout
+        };
+        var webhookUploadService = new WebhookUploadService(webhookHttpClient, webhookOptions, _auditLogger);
+
         _viewModel = new MainWindowViewModel(
             _sessionLogService,
             _keyCaptureService,
@@ -52,7 +65,9 @@ public partial class MainWindow : Window
             ShowConsentDialogAsync,
             _bannerViewModel,
             _consentCoordinator,
-            _resumeCoordinator);
+            _resumeCoordinator,
+            webhookUploadService,
+            webhookOptions);
 
         DataContext = _viewModel;
         this.KeyDown += OnKeyDown;

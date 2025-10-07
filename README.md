@@ -17,6 +17,7 @@ SafeKeyRecorder, Avalonia UI ve MVVM mimarisiyle geliştirilmiş, kullanıcını
 - **Sistem farkındalığı**: `SystemLockMonitor`, oturum kilitlendiğinde yakalamayı durdurup, kilit açıldığında otomatik devamı koordine eder.
 - **Durum bildirimleri**: `BackgroundStatusBannerViewModel` ve `BackgroundStatusTrayIcon` kullanıcıya anlık durum bilgisi verir, arka plan modunu hızlıca açıp kapamayı sağlar.
 - **Erişilebilirlik desteği**: `AccessibilityService`, kullanıcı tercihleri doğrultusunda arayüz bildirimlerini uyarlayarak deneyimi iyileştirir.
+- **Webhook ve log yönetimi**: Ana pencerede varsayılan bir webhook.site örnek adresi önceden doldurulur; kullanıcı gerekirse "+ Log Konumunu Değiştir" butonuyla kayıt dosyasının dizinini güncelleyebilir.
 
 ## Mimari Genel Bakış
 
@@ -50,6 +51,10 @@ dotnet run --project src/SafeKeyRecorder/SafeKeyRecorder.csproj
 ```
 
 İlk çalıştırmada rıza diyaloğu otomatik açılır. Kullanıcı onaylamadığı sürece arka plan kaydı devreye alınmaz.
+
+1. Rızayı kabul ederken “Sunucuya logları gönderme izni ver” kutusunu işaretle.
+2. Ana pencerede `Webhook adresi` alanında örnek (`https://webhook.site/#!/v/example-endpoint`) URL’si yer alır; kendi uç noktanla değiştir.
+3. `Log Konumunu Değiştir` butonuyla oturum logunu kaydetmek istediğin dizini seçebilir, ardından `Sunucuya Gönder` ile içeriği webhook.site üzerinde doğrulayabilirsin.
 
 ## Testler
 

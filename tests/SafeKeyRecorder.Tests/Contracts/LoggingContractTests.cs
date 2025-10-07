@@ -6,7 +6,7 @@ namespace SafeKeyRecorder.Tests.Contracts;
 
 public class LoggingContractTests
 {
-    private static readonly string ContractPath = Path.GetFullPath("../../../../specs/001-bu-uygulama-c/contracts/logging.json");
+    private static readonly string ContractPath = Path.GetFullPath("../../../../../specs/001-bu-uygulama-c/contracts/logging.json");
 
     [Fact]
     public void LoggingContract_ShouldDefineAppendAndPurgeOperations()

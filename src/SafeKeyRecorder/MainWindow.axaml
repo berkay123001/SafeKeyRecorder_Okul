@@ -40,13 +40,20 @@
         </Border>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" Margin="0,16,0,0">
-            <Button Content="Rıza Al"
-                    Command="{Binding StartConsentCommand}" />
+            <TextBox Width="320"
+                     Watermark="Webhook adresi"
+                     Text="{Binding WebhookEndpoint, Mode=TwoWay}" />
+            <Button Content="Sunucuya Gönder"
+                    Command="{Binding ExportLogCommand}" />
+            <Button Content="Logu Temizle"
+                    Command="{Binding PurgeLogCommand}" />
+            <Button Content="Log Konumunu Değiştir"
+                    Command="{Binding BrowseLogPathCommand}" />
             <Button Content="İzin Ayarları"
                     Command="{Binding OpenConsentSettingsCommand}"
                     IsEnabled="{Binding IsPermissionSummaryVisible}" />
-            <Button Content="Logu Temizle"
-                    Command="{Binding PurgeLogCommand}" />
+            <Button Content="Rıza Al"
+                    Command="{Binding StartConsentCommand}" />
         </StackPanel>
     </Grid>
 </Window>

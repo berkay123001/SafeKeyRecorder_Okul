@@ -132,24 +132,53 @@ public sealed class GlobalHookAdapter : IGlobalHookAdapter, IDisposable
             return;
         }
 
-        QueueCapture(data.KeyChar.ToString(), true, GetModifiers(e.RawEvent.Mask));
+        var keyChar = data.KeyChar;
+        var modifiers = GetModifiers(e.RawEvent.Mask);
 
-        _lastPrintableKeyCode = data.KeyCode;
-        _lastPrintableTimestamp = DateTimeOffset.UtcNow;
+        string symbol;
+        bool isPrintable;
+
+        if (char.IsControl(keyChar))
+        {
+            symbol = NormalizeKeyCode(data.KeyCode);
+            isPrintable = false;
+        }
+        else if (keyChar == ' ')
+        {
+            symbol = "␣";
+            isPrintable = true;
+        }
+        else
+        {
+            symbol = keyChar.ToString();
+            isPrintable = true;
+        }
+
+        QueueCapture(symbol, isPrintable, modifiers);
+
+        if (isPrintable)
+        {
+            _lastPrintableKeyCode = data.KeyCode;
+            _lastPrintableTimestamp = DateTimeOffset.UtcNow;
+        }
     }
 
     private void OnKeyPressed(object? sender, KeyboardHookEventArgs e)
     {
         var data = e.Data;
-        var isPrintableChar = data.KeyChar != KeyboardEventData.UndefinedChar && !char.IsControl(data.KeyChar);
 
-        if (isPrintableChar || IsRecentPrintableKey(data.KeyCode))
+        if (data.KeyChar != KeyboardEventData.UndefinedChar)
         {
-            // KeyTyped event will handle printable keys to avoid duplicates
+            // OnKeyTyped already handled characters producing KeyChar (printable or control).
             return;
         }
 
-        QueueCapture(data.KeyCode.ToString(), false, GetModifiers(e.RawEvent.Mask));
+        if (IsRecentPrintableKey(data.KeyCode))
+        {
+            return;
+        }
+
+        QueueCapture(NormalizeKeyCode(data.KeyCode), false, GetModifiers(e.RawEvent.Mask));
     }
 
     private void QueueCapture(string keySymbol, bool isPrintable, string[] modifiers)
@@ -197,6 +226,19 @@ public sealed class GlobalHookAdapter : IGlobalHookAdapter, IDisposable
         }
 
         return (DateTimeOffset.UtcNow - _lastPrintableTimestamp) <= TimeSpan.FromMilliseconds(200);
+    }
+
+    private static string NormalizeKeyCode(KeyCode keyCode)
+    {
+        var raw = keyCode.ToString();
+        raw = raw.Replace("KeyCode.", string.Empty, StringComparison.Ordinal);
+
+        if (raw.StartsWith("Vc", StringComparison.Ordinal) && raw.Length > 2)
+        {
+            raw = raw[2..];
+        }
+
+        return raw;
     }
 
     private void RunHookAsync(CancellationToken cancellationToken)

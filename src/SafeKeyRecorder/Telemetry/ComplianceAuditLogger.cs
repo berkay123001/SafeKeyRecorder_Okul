@@ -71,4 +71,18 @@ public sealed class ComplianceAuditLogger : IComplianceAuditLogger
     {
         _entries.Add($"PURGE|{sessionId}|{purgedAt:O}|auto={dueToAutoDelete}");
     }
+
+    public void LogWebhookAttempt(WebhookTransmissionAttempt attempt)
+    {
+        if (attempt is null)
+        {
+            throw new ArgumentNullException(nameof(attempt));
+        }
+
+        var status = attempt.StatusCode?.ToString() ?? "none";
+        var error = string.IsNullOrWhiteSpace(attempt.Error) ? "none" : attempt.Error;
+        _entries.Add(
+            $"WEBHOOK_ATTEMPT|session={attempt.SessionId}|endpoint={attempt.Endpoint}|status={status}|" +
+            $"success={attempt.Success}|attempt={attempt.AttemptNumber}|error={error}|timestamp={attempt.AttemptedAt:O}");
+    }
 }

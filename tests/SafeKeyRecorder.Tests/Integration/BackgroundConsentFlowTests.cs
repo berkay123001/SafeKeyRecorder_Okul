@@ -4,6 +4,7 @@ using Moq;
 using SafeKeyRecorder.Background;
 using SafeKeyRecorder.Models;
 using SafeKeyRecorder.Services;
+using SafeKeyRecorder.Services.Abstractions;
 using SafeKeyRecorder.Telemetry;
 using Xunit;
 
@@ -26,10 +27,10 @@ public class BackgroundConsentFlowTests
             banner.Object);
 
         var decision = new ConsentDecision(
-            accepted: true,
-            loggingEnabled: true,
-            autoDeleteRequested: true,
-            decidedAt: System.DateTimeOffset.UtcNow)
+            Accepted: true,
+            LoggingEnabled: true,
+            AutoDeleteRequested: true,
+            DecidedAt: System.DateTimeOffset.UtcNow)
         {
             AllowBackgroundCapture = true
         };
@@ -56,10 +57,10 @@ public class BackgroundConsentFlowTests
             banner.Object);
 
         var decision = new ConsentDecision(
-            accepted: false,
-            loggingEnabled: false,
-            autoDeleteRequested: true,
-            decidedAt: System.DateTimeOffset.UtcNow)
+            Accepted: false,
+            LoggingEnabled: false,
+            AutoDeleteRequested: true,
+            DecidedAt: System.DateTimeOffset.UtcNow)
         {
             AllowBackgroundCapture = false
         };

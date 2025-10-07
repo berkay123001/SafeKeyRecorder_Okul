@@ -50,12 +50,37 @@ public sealed class SessionLogService : IDisposable
 
         EnsureStorage(entry.RecordedAt);
 
-        var line = $"{entry.RecordedAt:O}, {entry.KeySymbol}";
+        var modifiers = entry.Modifiers is { Length: > 0 }
+            ? string.Join('+', entry.Modifiers)
+            : string.Empty;
+        var printableFlag = entry.IsPrintable ? "1" : "0";
+        var line = $"{entry.RecordedAt:O}|{entry.KeySymbol}|{printableFlag}|{modifiers}";
         var logPath = LogFilePath;
 
         await WriteLineAsync(logPath, line, cancellationToken).ConfigureAwait(false);
 
         LogAppended?.Invoke(this, line);
+    }
+
+    public void OverrideLogPath(string newPath)
+    {
+        if (string.IsNullOrWhiteSpace(newPath))
+        {
+            throw new ArgumentException("Yeni log dosyası yolu belirtilmelidir.", nameof(newPath));
+        }
+
+        if (_session is null)
+        {
+            throw new InvalidOperationException("Log yolu güncellenmeden önce oturum bağlanmalıdır.");
+        }
+
+        var directory = Path.GetDirectoryName(newPath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        _session.UpdateLogging(true, newPath, DateTimeOffset.UtcNow);
     }
 
     public Task PurgeAsync(CancellationToken cancellationToken = default)

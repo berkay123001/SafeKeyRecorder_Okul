@@ -26,6 +26,8 @@
                       IsChecked="{Binding AllowBackgroundCapture}" />
             <CheckBox Content="Log dosyasını etkinleştir"
                       IsChecked="{Binding IsLoggingEnabled}" />
+            <CheckBox Content="Belirtilen sunucuya logları gönderme izni ver"
+                      IsChecked="{Binding AllowWebhookUpload}" />
             <CheckBox Content="Oturum kapanışında logu sil"
                       IsChecked="{Binding IsAutoDeleteRequested}" />
 

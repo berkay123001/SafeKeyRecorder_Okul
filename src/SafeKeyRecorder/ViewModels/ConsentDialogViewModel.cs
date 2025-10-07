@@ -15,6 +15,7 @@ public sealed class ConsentDialogViewModel : ViewModelBase
     private bool _isLoggingEnabled;
     private bool _allowBackgroundCapture;
     private bool _isAutoDeleteRequested = true;
+    private bool _allowWebhookUpload;
     private bool _isDecisionMade;
 
     public ConsentDialogViewModel(Action<ConsentDecision>? onDecision = null, string? consentMessage = null)
@@ -60,6 +61,21 @@ public sealed class ConsentDialogViewModel : ViewModelBase
         }
     }
 
+    public bool AllowWebhookUpload
+    {
+        get => _allowWebhookUpload;
+        set
+        {
+            if (_allowWebhookUpload == value)
+            {
+                return;
+            }
+
+            _allowWebhookUpload = value;
+            RaisePropertyChanged();
+        }
+    }
+
     public bool IsAutoDeleteRequested
     {
         get => _isAutoDeleteRequested;
@@ -98,7 +114,8 @@ public sealed class ConsentDialogViewModel : ViewModelBase
             accepted && IsAutoDeleteRequested,
             DateTimeOffset.UtcNow)
         {
-            AllowBackgroundCapture = accepted && AllowBackgroundCapture
+            AllowBackgroundCapture = accepted && AllowBackgroundCapture,
+            AllowWebhookUpload = accepted && AllowWebhookUpload
         };
 
         DecisionCompleted?.Invoke(this, decision);

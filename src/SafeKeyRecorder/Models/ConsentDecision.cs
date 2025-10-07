@@ -6,5 +6,7 @@ public sealed record ConsentDecision(bool Accepted, bool LoggingEnabled, bool Au
 {
     public bool AllowBackgroundCapture { get; init; }
 
+    public bool AllowWebhookUpload { get; init; }
+
     public Guid ConsentDecisionId { get; init; } = Guid.NewGuid();
 }

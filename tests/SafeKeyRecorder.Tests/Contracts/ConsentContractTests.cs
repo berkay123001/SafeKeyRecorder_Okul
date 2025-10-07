@@ -6,7 +6,7 @@ namespace SafeKeyRecorder.Tests.Contracts;
 
 public class ConsentContractTests
 {
-    private static readonly string ContractPath = Path.GetFullPath("../../../../specs/001-bu-uygulama-c/contracts/consent.json");
+    private static readonly string ContractPath = Path.GetFullPath("../../../../../specs/001-bu-uygulama-c/contracts/consent.json");
 
     [Fact]
     public void ConsentContract_ShouldMatchRequiredFields()

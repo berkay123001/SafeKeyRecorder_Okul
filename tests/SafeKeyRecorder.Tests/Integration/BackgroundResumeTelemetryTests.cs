@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Moq;
 using SafeKeyRecorder.Background;
 using SafeKeyRecorder.Services;
+using SafeKeyRecorder.Services.Abstractions;
 using SafeKeyRecorder.Telemetry;
 using Xunit;
 

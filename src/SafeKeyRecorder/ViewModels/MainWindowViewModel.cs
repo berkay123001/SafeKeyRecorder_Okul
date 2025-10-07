@@ -1,11 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using SafeKeyRecorder.Background;
+using SafeKeyRecorder.Configuration;
 using SafeKeyRecorder.Models;
 using SafeKeyRecorder.Services;
 using SafeKeyRecorder.Telemetry;
@@ -21,6 +26,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly Func<Task<ConsentDecision?>> _showConsentDialogAsync;
     private readonly BackgroundConsentCoordinator _consentCoordinator;
     private readonly BackgroundResumeCoordinator _resumeCoordinator;
+    private readonly WebhookUploadService _webhookUploadService;
+    private readonly WebhookOptions _webhookOptions;
+    private WebhookConsentRecord? _webhookConsent;
+
+    private bool _backgroundCaptureEnabled;
 
     private ConsentSession? _currentSession;
     private string _consentStatus = "Rıza bekleniyor.";
@@ -40,7 +50,9 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         Func<Task<ConsentDecision?>> showConsentDialogAsync,
         BackgroundStatusBannerViewModel bannerViewModel,
         BackgroundConsentCoordinator consentCoordinator,
-        BackgroundResumeCoordinator resumeCoordinator)
+        BackgroundResumeCoordinator resumeCoordinator,
+        WebhookUploadService webhookUploadService,
+        WebhookOptions webhookOptions)
     {
         _sessionLogService = sessionLogService ?? throw new ArgumentNullException(nameof(sessionLogService));
         _keyCaptureService = keyCaptureService ?? throw new ArgumentNullException(nameof(keyCaptureService));
@@ -50,12 +62,16 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         _backgroundBanner = bannerViewModel ?? throw new ArgumentNullException(nameof(bannerViewModel));
         _consentCoordinator = consentCoordinator ?? throw new ArgumentNullException(nameof(consentCoordinator));
         _resumeCoordinator = resumeCoordinator ?? throw new ArgumentNullException(nameof(resumeCoordinator));
+        _webhookUploadService = webhookUploadService ?? throw new ArgumentNullException(nameof(webhookUploadService));
+        _webhookOptions = webhookOptions ?? throw new ArgumentNullException(nameof(webhookOptions));
 
         LogEntries = new ObservableCollection<string>();
 
         StartConsentCommand = new RelayCommand(StartConsentFlowAsync);
         PurgeLogCommand = new RelayCommand(PurgeLogAsync, _ => _currentSession is not null);
         OpenConsentSettingsCommand = new RelayCommand(OpenConsentSettingsAsync, _ => _currentSession is not null);
+        ExportLogCommand = new RelayCommand(ExportLogAsync, _ => CanExportLog());
+        BrowseLogPathCommand = new RelayCommand(BrowseLogPathAsync);
 
         _keyCaptureService.KeyCaptured += OnKeyCaptured;
         _sessionLogService.LogAppended += OnLogAppended;
@@ -180,9 +196,35 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public RelayCommand OpenConsentSettingsCommand { get; }
 
+    public RelayCommand ExportLogCommand { get; }
+
+    public RelayCommand BrowseLogPathCommand { get; }
+
+    public string WebhookEndpoint
+    {
+        get => _webhookOptions.Endpoint;
+        set
+        {
+            var trimmed = value?.Trim() ?? string.Empty;
+            if (string.Equals(_webhookOptions.Endpoint, trimmed, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _webhookOptions.Endpoint = trimmed;
+            RaisePropertyChanged();
+            ExportLogCommand.RaiseCanExecuteChanged();
+        }
+    }
+
     public async Task CaptureKeyAsync(string keySymbol, bool isPrintable, string[] modifiers)
     {
         if (!IsRecording)
+        {
+            return;
+        }
+
+        if (_backgroundCaptureEnabled)
         {
             return;
         }
@@ -231,13 +273,16 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             _currentSession = null;
             PurgeLogCommand.RaiseCanExecuteChanged();
             OpenConsentSettingsCommand.RaiseCanExecuteChanged();
+            ExportLogCommand.RaiseCanExecuteChanged();
             IsPermissionSummaryVisible = false;
             PermissionSummary = string.Empty;
             _resumeCoordinator.DisableBackgroundCapture();
+            _backgroundCaptureEnabled = false;
+            _webhookConsent = null;
             return;
         }
 
-        var logFilePath = _sessionLogService.LogFilePath;
+        var logFilePath = GetLogFilePath();
         var session = new ConsentSession();
         session.GrantConsent(decision.DecidedAt, decision.LoggingEnabled, logFilePath);
         session.SetAutoDelete(decision.AutoDeleteRequested);
@@ -253,6 +298,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         IsRecording = true;
         PurgeLogCommand.RaiseCanExecuteChanged();
         OpenConsentSettingsCommand.RaiseCanExecuteChanged();
+        ExportLogCommand.RaiseCanExecuteChanged();
 
         LogEntries.Clear();
 
@@ -276,13 +322,18 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         await _consentCoordinator.ApplyDecisionAsync(decision, CancellationToken.None).ConfigureAwait(false);
 
+        _webhookConsent = new WebhookConsentRecord(session.SessionId, decision.DecidedAt, decision.Accepted && decision.AllowWebhookUpload);
+        ExportLogCommand.RaiseCanExecuteChanged();
+
         if (decision.AllowBackgroundCapture)
         {
             _resumeCoordinator.EnableBackgroundCapture();
+            _backgroundCaptureEnabled = true;
         }
         else
         {
             _resumeCoordinator.DisableBackgroundCapture();
+            _backgroundCaptureEnabled = false;
         }
     }
 
@@ -296,7 +347,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         void AddEntry()
         {
-            var humanReadable = FormatEntry(entry.RecordedAt, entry.KeySymbol, entry.Modifiers);
+            var humanReadable = FormatEntry(entry.RecordedAt, entry.KeySymbol, entry.Modifiers, entry.IsPrintable);
             LogEntries.Add(humanReadable);
         }
 
@@ -339,6 +390,67 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         _backgroundBanner.ShowPassive("Log dosyası temizlendi.");
     }
 
+    private async Task BrowseLogPathAsync(object? parameter)
+    {
+        if (_currentSession is null)
+        {
+            _backgroundBanner.ShowPassive("Önce rıza alın ve oturumu başlatın.");
+            return;
+        }
+
+        if (!_currentSession.LoggingEnabled)
+        {
+            _backgroundBanner.ShowPassive("Dosya kaydı kapalıyken konum değiştirilemez.");
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Log dosyası konumu",
+            InitialFileName = "session_log.txt",
+            Filters = new List<FileDialogFilter>
+            {
+                new()
+                {
+                    Name = "Metin dosyaları",
+                    Extensions = { "txt" }
+                }
+            }
+        };
+
+        var window = Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+            ? desktop.MainWindow
+            : null;
+
+        if (window is null)
+        {
+            _backgroundBanner.ShowPassive("Dosya seçici açılamadı.");
+            return;
+        }
+
+        var result = await dialog.ShowAsync(window).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(result))
+        {
+            return;
+        }
+
+        _sessionLogService.OverrideLogPath(result);
+        _backgroundBanner.ShowPassive($"Log dosyası konumu güncellendi: {result}");
+
+        LoggingPathMessage = $"Log dosyası: {result}";
+        ExportLogCommand.RaiseCanExecuteChanged();
+    }
+
+    private string GetLogFilePath()
+    {
+        if (_currentSession?.LogFilePath is { Length: > 0 } path)
+        {
+            return path;
+        }
+
+        return _sessionLogService.LogFilePath;
+    }
+
     private void OnAccessibilityChanged(object? sender, AccessibilityPreference preference)
     {
         var states = preference switch
@@ -359,30 +471,114 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             return null;
         }
 
-        var separatorIndex = line.IndexOf(',');
-        if (separatorIndex < 0)
+        var parts = line.Split('|');
+        if (parts.Length < 4)
         {
             return null;
         }
 
-        var timestampPart = line[..separatorIndex].Trim();
-        var keyPart = line[(separatorIndex + 1)..].Trim();
+        var timestampPart = parts[0];
+        var keyPart = parts[1];
+        var printablePart = parts[2];
+        var modifiersPart = parts[3];
 
         if (!DateTimeOffset.TryParse(timestampPart, out var recordedAt))
         {
             recordedAt = DateTimeOffset.UtcNow;
         }
 
-        return FormatEntry(recordedAt, keyPart, Array.Empty<string>());
+        var isPrintable = printablePart == "1";
+        var modifiers = string.IsNullOrWhiteSpace(modifiersPart)
+            ? Array.Empty<string>()
+            : modifiersPart.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        return FormatEntry(recordedAt, keyPart, modifiers, isPrintable);
     }
 
-    private static string FormatEntry(DateTimeOffset recordedAt, string keySymbol, IReadOnlyList<string>? modifiers)
+    private static string FormatEntry(DateTimeOffset recordedAt, string keySymbol, IReadOnlyList<string>? modifiers, bool isPrintable)
     {
         var modifierText = modifiers is { Count: > 0 }
             ? $"[{string.Join('+', modifiers)}] "
             : string.Empty;
 
-        return $"{recordedAt:HH:mm:ss.fff} {modifierText}{keySymbol}".Trim();
+        var normalizedSymbol = isPrintable && keySymbol.Length == 1
+            ? keySymbol
+            : keySymbol.Replace("KeyCode.", string.Empty);
+
+        if (string.Equals(normalizedSymbol, "Space", StringComparison.OrdinalIgnoreCase))
+        {
+            normalizedSymbol = "␣";
+        }
+
+        return $"{recordedAt:HH:mm:ss.fff} {modifierText}{normalizedSymbol}".Trim();
+    }
+
+    private bool CanExportLog()
+    {
+        if (_currentSession is null)
+        {
+            return false;
+        }
+
+        if (_webhookConsent is null)
+        {
+            return false;
+        }
+
+        if (!_webhookConsent.CanUpload)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_webhookOptions.Endpoint))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task ExportLogAsync(object? parameter)
+    {
+        if (!CanExportLog())
+        {
+            _backgroundBanner.ShowPassive("Webhook paylaşım izni yok veya log dosyası bulunamadı.");
+            return;
+        }
+
+        if (!Uri.TryCreate(_webhookOptions.Endpoint, UriKind.Absolute, out _))
+        {
+            _backgroundBanner.ShowPassive("Geçerli bir webhook adresi girin.");
+            return;
+        }
+
+        string payload;
+        try
+        {
+            payload = await File.ReadAllTextAsync(_sessionLogService.LogFilePath).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _backgroundBanner.ShowPassive($"Log okunamadı: {ex.Message}");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            _backgroundBanner.ShowPassive("Log dosyası boş. Gönderim yapılmadı.");
+            return;
+        }
+
+        try
+        {
+            _backgroundBanner.ShowPassive("Webhook'a gönderiliyor...");
+            await _webhookUploadService.UploadAsync(_webhookConsent!, payload, CancellationToken.None).ConfigureAwait(false);
+            _backgroundBanner.ShowPassive("Log dışa aktarıldı.");
+        }
+        catch (Exception ex)
+        {
+            _backgroundBanner.ShowPassive($"Webhook gönderimi başarısız: {ex.Message}");
+        }
     }
 
     public void Dispose()
@@ -407,7 +603,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         var background = decision.AllowBackgroundCapture ? "Arka plan: Açık" : "Arka plan: Kapalı";
         var logging = decision.LoggingEnabled ? "Dosya kaydı: Açık" : "Dosya kaydı: Kapalı";
         var retention = decision.AutoDeleteRequested ? "Otomatik silme: Açık" : "Otomatik silme: Kapalı";
+        var webhook = decision.AllowWebhookUpload ? "Webhook paylaşımı: Açık" : "Webhook paylaşımı: Kapalı";
 
-        return $"İzinler → {background} · {logging} · {retention}";
+        return $"İzinler → {background} · {logging} · {retention} · {webhook}";
     }
 }
